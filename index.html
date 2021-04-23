@@ -47,6 +47,14 @@
         .attr("viewBox", "0 0 " + width + " " + height)
         .classed("svg-content", true);
 
+         svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", 35)
+            .attr("text-anchor", "middle")
+            .attr("font-size",30)
+            .text("COVID-19 Vaccine Efficacy Tracker");
+
+
     var div = d3.select("div#container")
         .append("div")
         .attr("class", "tooltip")
