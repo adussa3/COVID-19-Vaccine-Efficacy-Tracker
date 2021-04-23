@@ -15,14 +15,6 @@
     var width = window.innerWidth;
     var height = window.innerHeight;
 
-    //Create SVG element and append map to the SVG
-    var svg = d3.select("div#container")
-        .append("svg")
-        .attr("preserveAspectRatio", "xMinYMin meet")
-        .style("background-color","#c9e8fd")
-        .attr("viewBox", "0 0 " + width + " " + height)
-        .classed("svg-content", true);
-
     // D3 Projection
     var projection = d3.geoAlbersUsa()
         .translate([width / 2, height / 2]) // translate to center of screen
@@ -32,26 +24,27 @@
     var path = d3.geoPath() // path generator that will convert GeoJSON to SVG paths
         .projection(projection); // tell path generator to use albersUsa projection
 
-    // Define Global Variables
-    var topojson = d3.json("us-counties.json");
+    //Create SVG element and append map to the SVG
+    var svg = d3.select("div#container")
+        .append("svg")
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .style("background-color","#c9e8fd")
+        .attr("viewBox", "0 0 " + width + " " + height)
+        .classed("svg-content", true);
 
-    Promise.all([
-        topojson,
-    ]).then(function(values) {
-        createMap(values[0]);
-    });
+    // Add a g element to group SVG shapes together
+    var g = svg.append("g");
 
-    function createMap(world) {
-        svg.append("g")
-            .attr("class", "counties")
-            .selectAll("path")
-            .data(world.features)
+    // load and display the World
+    d3.json("us-counties.json").then(function(topology) {
+        g.selectAll("path")
+            .data(topojson.feature(topology, topology.objects.counties).features)
             .enter().append("path")
+            .attr("d", path)
             .attr("fill", "lightgray")
-            .attr("d", d3.geoPath().projection(projection))
             .style("stroke", "#fff")
-            .style("stroke-width", "0.333")
-    }
+            .style("stroke-width", "0.333");
+    });
 
 </script>
 </body>
