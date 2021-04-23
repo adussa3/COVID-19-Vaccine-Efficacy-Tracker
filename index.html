@@ -24,7 +24,7 @@
     var path = d3.geoPath() // path generator that will convert GeoJSON to SVG paths
         .projection(projection); // tell path generator to use albersUsa projection
 
-    //Create SVG element and append map to the SVG
+    // Create SVG element and append map to the SVG
     var svg = d3.select("div#container")
         .append("svg")
         .attr("preserveAspectRatio", "xMinYMin meet")
@@ -45,6 +45,16 @@
             .style("stroke", "#fff")
             .style("stroke-width", "0.333");
     });
+
+    // Add Pan and Zoom functionality
+    var zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on('zoom', function() {
+            g.selectAll('path')
+                .attr('transform', d3.event.transform);
+        });
+    
+    svg.call(zoom)
 
 </script>
 </body>
