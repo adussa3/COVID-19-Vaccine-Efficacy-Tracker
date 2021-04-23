@@ -41,9 +41,25 @@
             .data(topojson.feature(topology, topology.objects.counties).features)
             .enter().append("path")
             .attr("d", path)
-            .attr("fill", "lightgray")
-            .style("stroke", "#fff")
-            .style("stroke-width", "0.333");
+            .style("fill", "lightgray")
+            .style("stroke", "white")
+            .style("stroke-width", 0.333)
+
+            //
+            .on("mouseover", function(d) {
+                d3.select(this)
+                    // .transition()
+                    // .duration(300)
+                    .style("fill", "yellow")
+            })
+
+            //
+            .on("mouseout", function(d) {
+                d3.select(this)
+                    // .transition()
+                    // .duration(300)
+                    .style("fill", "lightgray")
+            });
     });
 
     // Add Pan and Zoom functionality
@@ -53,7 +69,7 @@
             g.selectAll('path')
                 .attr('transform', d3.event.transform);
         });
-    
+
     svg.call(zoom)
 
 </script>
