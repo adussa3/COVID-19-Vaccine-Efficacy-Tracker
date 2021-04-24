@@ -83,7 +83,7 @@
             d3.dsv(",", "us-counties-clean.csv", function(d) { 
                 return {
                     date: d.date,
-                    id: +d["geoid"],
+                    id: +d["fips"],
                     county: d.county,
                     state: d.state,
                     cases: d.cases
@@ -212,10 +212,10 @@
                             text = text + elem.state + " Vacinations: " + "Not available"
                         }
                         text = text + "<BR/> County: " + elem.county
-                            + "<BR/> New cases: " + elem.cases
+                            + "<BR/> Total cases: " + elem.cases
                     } else {
                         text = text + "<BR/> County: Not available"
-                        + "<BR/> New cases: Not available"
+                        + "<BR/> Total cases: Not available"
                     }
                     text = text + "<BR/> Forecasted cases: "
                     if (forecastElem == undefined || forecastElem.forecast == 0) {
