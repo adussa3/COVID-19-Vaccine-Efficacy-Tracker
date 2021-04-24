@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>My map</title>
-    <script  type="text/javascript" src="lib/d3.v5.min.js"></script>
-    <script  type="text/javascript" src="lib/d3-dsv.min.js"></script>
-    <script  type="text/javascript" src="lib/d3-tip.min.js"></script>
-    <script  type="text/javascript" src="lib/topojson.v2.min.js"></script>
+    <title>COVID-19 Vaccine Efficacy Tracker</title>
+    <script type="text/javascript" src="lib/d3.v5.min.js"></script>
+    <script type="text/javascript" src="lib/d3-dsv.min.js"></script>
+    <script type="text/javascript" src="lib/d3-tip.min.js"></script>
+    <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
     <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
     <style></style>
 </head>
@@ -22,19 +22,31 @@
         border: 1px solid #989898;
         pointer-events: none;
     }
+
+    svg {
+        display: block;
+        margin: auto;
+    }
 </style>
 <body>
+<h1 style="text-align:center">COVID-19 Vaccine Efficacy Tracker</h1>
+<h3 style="text-align:center">Note that forecasts are available for mid December 2020 to late February 2021</h3>
 <label>Select Date: <select id="selectButton"></select></label>
+<br/>
+<br/>
 <div id="container" class="svg-container"></div>
+<br/>
+<br/>
+
 <script type="text/javascript">
     // width and height of map
-    var width = window.innerWidth;
-    var height = window.innerHeight - 50;
+    var width = window.innerWidth - 100;
+    var height = window.innerHeight - 100;
 
     // D3 Projection
     var projection = d3.geoAlbersUsa()
         .translate([width / 2, height / 2]) // translate to center of screen
-        .scale([1500]); // scale things down so see entire US
+        .scale([1200]); // scale things down so see entire US
 
     // Define path generator
     var path = d3.geoPath() // path generator that will convert GeoJSON to SVG paths
@@ -45,16 +57,17 @@
         .append("svg")
         .attr("preserveAspectRatio", "xMinYMin meet")
         .style("background-color","white")
-        .attr("viewBox", "0 0 " + width + " " + height)
-        .classed("svg-content", true);
+        .attr("width", width)
+        .attr("height", height);
 
-         svg.append("text")
-            .attr("x", (width / 2))
-            .attr("y", 35)
-            .attr("text-anchor", "middle")
-            .attr("font-size",30)
-            .text("COVID-19 Vaccine Efficacy Tracker");
-
+    var borderPath = svg.append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("height", height)
+        .attr("width", width)
+        .style("stroke", "black")
+        .style("fill", "none")
+        .style("stroke-width", 1);
 
     var div = d3.select("div#container")
         .append("div")
@@ -63,7 +76,6 @@
 
     // Add a g element to group SVG shapes together
     var g = svg.append("g");
-
 
     Promise.all([
             // enter code to read files
@@ -79,6 +91,17 @@
             }).then(function(data) {
                 dataset = data
             }),
+            d3.dsv(",", "us-counties-forecast.csv", function(d) {
+                return {
+                    date: d.Date,
+                    county: d.County,
+                    state: d.State,
+                    cases: d.Cases,
+                    forecast: +d.Forecast
+                }
+            }).then(function(data) {
+                forecastData = data
+            }),
             d3.dsv(",", "us_state_vaccinations_clean.csv", function(d) { 
                 return {
                     date: d.date,
@@ -89,9 +112,8 @@
                 vaccineData = data
             })
         ]).then(function(values) {
-            ready(values[0], dataset, vaccineData)
+            ready(values[0], dataset, forecastData, vaccineData)
         });
-
 
     // Add Pan and Zoom functionality
     var zoom = d3.zoom()
@@ -103,7 +125,8 @@
 
     svg.call(zoom)
 
-    function ready(topology, dataset, vaccineData) {
+    // Ready function()
+    function ready(topology, dataset, forecastData, vaccineData) {
 
         // Add drop down
         dates = []
@@ -112,6 +135,7 @@
                 dates.push(d.date)
             }
         });
+
         var options = d3.select("#selectButton")
             .selectAll('option')
             .data(dates)
@@ -120,16 +144,19 @@
             .text(function (d) { return d;})
             .attr("value", function (d) { return d; })
             .property("selected", function(d) {return d === dates[200]})
+
         d3.select("#selectButton").on("change", function(d) {
             d3.selectAll("#currDate").remove()
             var selectedDate = d3.select(this).property("value")
-            createMapAndLegend(topology, dataset, vaccineData,selectedDate)
+            createMapAndLegend(topology, dataset, forecastData, vaccineData, selectedDate)
         })
-        createMapAndLegend(topology, dataset, vaccineData,dates[200])
+
+        createMapAndLegend(topology, dataset, forecastData, vaccineData, dates[200])
     }
 
-    function createMapAndLegend(topology, dataset, vaccineData, selectedDate){
+    function createMapAndLegend(topology, dataset, forecastData, vaccineData, selectedDate) {
         dataset = dataset.filter(function (d){return d.date == selectedDate})
+        forecastData = forecastData.filter(function(d) {return reformatDate(d.date) == selectedDate})
         vaccineData = vaccineData.filter(function (d){return d.date == selectedDate})
 
         if (vaccineData.length != 0) {
@@ -152,54 +179,82 @@
           .range(["#a6bce2","#032152"])
           .interpolate(d3.interpolateLab);
 
-
+        var vaccineElem = null;
         g.selectAll("path")
-        .data(topojson.feature(topology, topology.objects.counties).features)
-        .enter().append("path")
-        .attr("d", path)
-        .attr("id","currDate")
-        .style("stroke", "white")
-        .style("stroke-width", 0.333)
-        .attr("fill", function (d) {
-            elem = dataset.find(function(l) { return l.id == d.id})
-            if (elem != null) { 
-                vaccineElem = vaccineData.find(function(l) { return l.location == elem.state})
-                if (vaccineElem != null) {
-                    return color(vaccineElem.total_vaccinations)
-                }
-            }
-            return "grey"
-        })
-        .on("mouseover", function(d) {
-            elem = dataset.find(function(l) { return l.id == d.id})
-            div.transition().duration(300).style("opacity", 1)
-            div.html(function(d) {
-                var text = ""
+            .data(topojson.feature(topology, topology.objects.counties).features)
+            .enter().append("path")
+            .attr("d", path)
+            .attr("id","currDate")
+            .style("stroke", "white")
+            .style("stroke-width", 0.333)
+            .attr("fill", function (d) {
+                elem = dataset.find(function(l) { return l.id == d.id})
                 if (elem != null) {
-                    text = text + "County: " + elem.county 
-                    + "<BR/> New cases: " + elem.cases
                     vaccineElem = vaccineData.find(function(l) { return l.location == elem.state})
                     if (vaccineElem != null) {
-                    text = text + "<BR/> " + elem.state + " Vacinations: " + vaccineElem.total_vaccinations
-                    } else {
-                        text = text + "<BR/> " + elem.state + " Vacinations: " + "Not available"
+                        return color(vaccineElem.total_vaccinations)
                     }
-                } else {
-                    text = text + "County: Not available"
-                    + "<BR/> New cases: Not available"
                 }
-                text = text + "<BR/> Forecasted cases: "
-                return text
+                return "grey"
             })
-            .style("left", (d3.event.pageX) + "px")
-            .style("top", (d3.event.pageY -30) + "px")
-        })
-        .on("mouseout", function(d) {
-            d3.select(this)
-                // .transition()
-                // .duration(300)
-                // .style("fill", "lightgray")
-        });
+            .on("mouseover", function(d) {
+                elem = dataset.find(function(l) { return l.id == d.id})
+                forecastElem = forecastData.find(function(l) {return l.county == elem.county && l.state == elem.state})
+
+                div.transition().duration(300).style("opacity", 1)
+                div.html(function(d) {
+                    var text = ""
+                    if (elem != null) {
+                        vaccineElem = vaccineData.find(function(l) { return l.location == elem.state})
+                        if (vaccineElem != null) {
+                            text = text + elem.state + " Vacinations: " + vaccineElem.total_vaccinations
+                        } else {
+                            text = text + elem.state + " Vacinations: " + "Not available"
+                        }
+                        text = text + "<BR/> County: " + elem.county
+                            + "<BR/> New cases: " + elem.cases
+                    } else {
+                        text = text + "<BR/> County: Not available"
+                        + "<BR/> New cases: Not available"
+                    }
+                    text = text + "<BR/> Forecasted cases: "
+                    if (forecastElem == undefined || forecastElem.forecast == 0) {
+                        text = text + "Not available";
+                    } else {
+                        text = text + forecastElem.forecast;
+                    }
+                    return text
+                })
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY -30) + "px")
+
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .style("fill", "yellow")
+            })
+            .on("mouseout", function(d) {
+                div.transition().duration(300).style("opacity", 0)
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .style("fill", function(l) {
+                        if (vaccineElem != null) {
+                            return color(vaccineElem.total_vaccinations);
+                        }
+                        return "grey";
+                    })
+            });
+
+        function reformatDate(date) {
+            var newDate  = new Date(date);
+            var year = newDate.getFullYear();
+            var month = newDate.getMonth() + 1;
+            if (month < 10) {month = "0" + month;}
+            var day = newDate.getDate();
+            if (day < 10) {day = "0" + day;}
+            return year + "-" + month + "-" + day;
+        }
     }
 
 </script>
