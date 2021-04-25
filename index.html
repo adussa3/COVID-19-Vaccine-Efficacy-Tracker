@@ -30,7 +30,8 @@
 </style>
 <body>
 <h1 style="text-align:center">COVID-19 Vaccine Efficacy Tracker</h1>
-<h3 style="text-align:center">Note that forecasts are available for mid December 2020 to late February 2021</h3>
+<h3 style="text-align:center">Forecasts are available for mid December 2020 to late February 2021</h3>
+<h4 style="text-align:center">Note that darker blue states administered more vaccines than lighter blue states</h4>
 <label>Select Date: <select id="selectButton"></select></label>
 <br/>
 <br/>
@@ -143,7 +144,7 @@
             .append('option')
             .text(function (d) { return d;})
             .attr("value", function (d) { return d; })
-            .property("selected", function(d) {return d === dates[200]})
+            .property("selected", function(d) {return d === dates[377]})
 
         d3.select("#selectButton").on("change", function(d) {
             d3.selectAll("#currDate").remove()
@@ -151,7 +152,7 @@
             createMapAndLegend(topology, dataset, forecastData, vaccineData, selectedDate)
         })
 
-        createMapAndLegend(topology, dataset, forecastData, vaccineData, dates[200])
+        createMapAndLegend(topology, dataset, forecastData, vaccineData, dates[377])
     }
 
     function createMapAndLegend(topology, dataset, forecastData, vaccineData, selectedDate) {
