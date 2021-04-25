@@ -97,7 +97,7 @@
                     county: d.County,
                     state: d.State,
                     cases: d.Cases,
-                    forecast: +d.Forecast
+                    forecast: Math.round(+d.Forecast)
                 }
             }).then(function(data) {
                 forecastData = data
