@@ -51,4 +51,4 @@ for key, value in dct.items():
     mydict = [dwl, dfl, listag, bl, zerolist + arml]
     mydf = pd.DataFrame(mydict)
     this_df = mydf.T
-    this_df.to_csv("output.csv", mode='a', index=False, header=["County", "State", "Cases", "Date", "Forecast"])
+    this_df.to_csv("us-counties-forecast.csv", mode='a', index=False, header=["County", "State", "Cases", "Date", "Forecast"])
